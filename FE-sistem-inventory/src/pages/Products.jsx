@@ -1,0 +1,514 @@
+import React, { useState, useMemo } from "react";
+import Sidebar from "../components/Sidebar.jsx";
+import AddProductModal from "../components/AddProductModal.jsx";
+import EditProductModal from "../components/EditProductModal.jsx";
+import { Link } from "react-router-dom";
+import "../styles/product.css";
+import IconButton from "@mui/material/IconButton";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+
+function Products(props) {
+  const { products, setProducts, suppliers, user, onLogout } = props;
+  const name = user ? user.username : "Pengguna";
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const availableSuppliers = useMemo(() => {
+    return [...new Set(suppliers.map((sup) => sup.supplier))];
+  }, [suppliers]);
+
+  const availableCategories = useMemo(() => {
+    if (!products) return [];
+    const lowerCategories = products
+      .map((p) => (p.category ? p.category.trim().toLowerCase() : ""))
+      .filter((cat) => cat !== "");
+
+    return [...new Set(lowerCategories)].map(
+      (cat) => cat.charAt(0).toUpperCase() + cat.slice(1),
+    );
+  }, [products]);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState({
+    id: "",
+    name: "",
+    category: "",
+    stock: "",
+    price: "",
+    supplier: "",
+  });
+
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    category: "",
+    stock: "",
+    price: "",
+    supplier: "",
+  });
+
+  const [filter, setFilter] = useState({
+    category: "",
+    supplier: "",
+    searchQuery: "",
+  });
+
+  // ===== PAGINATION STATE =====
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  function handleFilterChange(event) {
+    const { name, value } = event.target;
+    setFilter((prevValue) => ({
+      ...prevValue,
+      [name]: value,
+    }));
+    setCurrentPage(1); // reset ke halaman 1 saat filter berubah
+  }
+
+  function handleFormChange(event) {
+    const { name, value } = event.target;
+    setNewProduct((prevProducts) => {
+      return {
+        ...prevProducts,
+        [name]: value,
+      };
+    });
+  }
+
+  async function handleFormSubmit(event) {
+    event.preventDefault();
+
+    if (
+      !newProduct.name ||
+      !newProduct.category ||
+      !newProduct.stock ||
+      !newProduct.price ||
+      !newProduct.supplier
+    ) {
+      alert("Tolong isi semua kolom formulir!");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/api/products", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newProduct.name,
+          category: newProduct.category,
+          stock: Number(newProduct.stock),
+          price: Number(newProduct.price),
+          supplier: newProduct.supplier,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Gagal menambah produk");
+      const insertedProduct = await response.json();
+
+      setProducts((prevProducts) => [...prevProducts, insertedProduct]);
+      setNewProduct({
+        name: "",
+        category: "",
+        stock: "",
+        price: "",
+        supplier: "",
+      });
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      alert("Gagal menambah produk ke server");
+    }
+  }
+
+  function openEditModal(product) {
+    setEditingProduct(product);
+    setIsEditModalOpen(true);
+  }
+
+  function handleEditFormChange(event) {
+    const { name, value } = event.target;
+    setEditingProduct((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
+  async function handleEditFormSubmit(event) {
+    event.preventDefault();
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/products/${editingProduct.id}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: editingProduct.name,
+            category: editingProduct.category,
+            stock: Number(editingProduct.stock),
+            price: Number(editingProduct.price),
+            supplier: editingProduct.supplier,
+          }),
+        },
+      );
+
+      if (!response.ok) throw new Error("Gagal mengedit produk");
+
+      setProducts((prevProducts) => {
+        return prevProducts.map((item) => {
+          if (item.id === editingProduct.id) {
+            return {
+              id: editingProduct.id,
+              name: editingProduct.name,
+              category: editingProduct.category,
+              stock: Number(editingProduct.stock),
+              price: Number(editingProduct.price),
+              supplier: editingProduct.supplier,
+            };
+          }
+          return item;
+        });
+      });
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      alert("Gagal memperbarui produk di server.");
+    }
+  }
+
+  async function deleteProduct(id) {
+    if (!window.confirm("Apakah anda yakin ingin menghapus produk ini?"))
+      return;
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/products/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Gagal menghapus produk");
+      setProducts((prevProducts) =>
+        prevProducts.filter((item) => item.id !== id),
+      );
+    } catch (error) {
+      console.error(error);
+      alert("Gagal menghapus produk dari server.");
+    }
+  }
+
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter((product) => {
+      const matchCategory =
+        filter.category === "" ||
+        (product.category &&
+          product.category.toLowerCase() === filter.category.toLowerCase());
+      const matchSupplier =
+        filter.supplier === "" ||
+        (product.supplier &&
+          product.supplier.toLowerCase() === filter.supplier.toLowerCase());
+      const matchSearch =
+        filter.searchQuery === "" ||
+        (product.name &&
+          product.name
+            .toLowerCase()
+            .includes(filter.searchQuery.toLowerCase())) ||
+        (product.supplier &&
+          product.supplier
+            .toLowerCase()
+            .includes(filter.searchQuery.toLowerCase()));
+      return matchCategory && matchSupplier && matchSearch;
+    });
+  }, [products, filter]);
+
+  // ===== PAGINATION LOGIC =====
+  const totalItems = filteredProducts.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+  // Pastikan currentPage tidak melebihi totalPages (misalnya setelah filter/delete)
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  // Generate nomor halaman yang ditampilkan (maks 5 nomor + ellipsis)
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (safeCurrentPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (safeCurrentPage >= totalPages - 2) {
+        pages.push(
+          1,
+          "...",
+          totalPages - 3,
+          totalPages - 2,
+          totalPages - 1,
+          totalPages,
+        );
+      } else {
+        pages.push(
+          1,
+          "...",
+          safeCurrentPage - 1,
+          safeCurrentPage,
+          safeCurrentPage + 1,
+          "...",
+          totalPages,
+        );
+      }
+    }
+    return pages;
+  };
+
+  return (
+    <div>
+      <Sidebar user={name} onLogout={onLogout} />
+      <div className="product-content">
+        <div className="header-product">
+          <h2>Product Management</h2>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn-add-product"
+          >
+            Add Product
+          </button>
+        </div>
+
+        <div className="filter-search-product">
+          <div className="filter-product">
+            <div className="filter-group">
+              <label htmlFor="categorySelect" className="filter-label">
+                Category
+              </label>
+              <div className="select-wrapper">
+                <select
+                  id="categorySelect"
+                  name="category"
+                  value={filter.category}
+                  onChange={handleFilterChange}
+                  className="filter-select"
+                >
+                  <option value="">Pilih Kategori</option>
+                  {availableCategories.map((catName, index) => (
+                    <option key={index} value={catName}>
+                      {catName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="filter-group">
+              <label htmlFor="supplierSelect" className="filter-label">
+                Supplier
+              </label>
+              <div className="select-wrapper">
+                <select
+                  id="supplierSelect"
+                  name="supplier"
+                  value={filter.supplier}
+                  onChange={handleFilterChange}
+                  className="filter-select"
+                >
+                  <option value="">Pilih Supplier</option>
+                  {availableSuppliers.map((supName, index) => (
+                    <option key={index} value={supName}>
+                      {supName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="search-group">
+              <input
+                type="text"
+                name="searchQuery"
+                placeholder="Search Product..."
+                value={filter.searchQuery}
+                onChange={handleFilterChange}
+                className="search-input"
+                autoComplete="off"
+              />
+            </div>
+            <div className="button-group">
+              <button type="button" className="btn-search">
+                Search
+              </button>
+              <button
+                type="button"
+                className="btn-clear"
+                onClick={() => {
+                  setFilter({ category: "", supplier: "", searchQuery: "" });
+                  setCurrentPage(1);
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="table-low-item">
+          <h2>Daftar Produk</h2>
+          <div className="table-responsive">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama Produk</th>
+                  <th>Kategori</th>
+                  <th>Sisa Stok</th>
+                  <th>Harga</th>
+                  <th>Supplier</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentProducts.length > 0 ? (
+                  currentProducts.map((product, index) => (
+                    <tr key={product.id}>
+                      <td>{startIndex + index + 1}</td>
+                      <td>{product.name}</td>
+                      <td>{product.category}</td>
+                      <td>{product.stock}</td>
+                      <td>Rp {product.price.toLocaleString("id-ID")}</td>
+                      <td>{product.supplier}</td>
+                      <td>
+                        <IconButton
+                          className="btn-edit-product"
+                          onClick={() => openEditModal(product)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          className="btn-del-product"
+                          onClick={() => deleteProduct(product.id)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="7"
+                      style={{
+                        textAlign: "center",
+                        color: "#64748b",
+                        padding: "24px",
+                      }}
+                    >
+                      Produk tidak ditemukan...
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ===== PAGINATION UI ===== */}
+          {totalItems > 0 && (
+            <div className="pagination-container">
+              <div className="pagination-info">
+                Menampilkan {startIndex + 1}–{Math.min(endIndex, totalItems)}{" "}
+                dari {totalItems} produk
+              </div>
+
+              <div className="pagination-controls">
+                <div className="items-per-page">
+                  <label htmlFor="itemsPerPage">Tampilkan:</label>
+                  <select
+                    id="itemsPerPage"
+                    value={itemsPerPage}
+                    onChange={handleItemsPerPageChange}
+                    className="items-per-page-select"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+
+                <button
+                  className="pagination-btn"
+                  onClick={() => handlePageChange(safeCurrentPage - 1)}
+                  disabled={safeCurrentPage === 1}
+                >
+                  ‹ Prev
+                </button>
+
+                {getPageNumbers().map((page, idx) =>
+                  page === "..." ? (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="pagination-ellipsis"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      className={`pagination-btn ${
+                        page === safeCurrentPage ? "active" : ""
+                      }`}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </button>
+                  ),
+                )}
+
+                <button
+                  className="pagination-btn"
+                  onClick={() => handlePageChange(safeCurrentPage + 1)}
+                  disabled={safeCurrentPage === totalPages}
+                >
+                  Next ›
+                </button>
+              </div>
+            </div>
+          )}
+
+          <AddProductModal
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
+            handleFormSubmit={handleFormSubmit}
+            newProduct={newProduct}
+            handleFormChange={handleFormChange}
+            suppliers={suppliers}
+          />
+
+          <EditProductModal
+            isEditModalOpen={isEditModalOpen}
+            setIsEditModalOpen={setIsEditModalOpen}
+            editingProduct={editingProduct}
+            handleEditFormChange={handleEditFormChange}
+            handleEditFormSubmit={handleEditFormSubmit}
+            suppliers={suppliers}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Products;
