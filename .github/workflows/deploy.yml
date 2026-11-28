@@ -1,17 +1,14 @@
-```yaml
-name: "CI/CD - Sistem Inventory & Supplier"
+name: CI/CD - Sistem Inventory & Supplier
 
 on:
   push:
     branches:
       - main
-
   workflow_dispatch:
 
 jobs:
   build-test-deploy:
     runs-on: self-hosted
-
     steps:
       # 1. Titik awal pengukuran
       - name: Start Deployment Timer
@@ -30,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '26'
+          node-version: '22'
 
       # 4. Install backend dependencies
       - name: Install Backend Dependencies
@@ -62,21 +59,12 @@ jobs:
         shell: powershell
         run: |
           $ports = @(3000, 5173)
-
           foreach ($port in $ports) {
-            $connections = Get-NetTCPConnection `
-              -LocalPort $port `
-              -State Listen `
-              -ErrorAction SilentlyContinue
-
+            $connections = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
             foreach ($connection in $connections) {
-              Stop-Process `
-                -Id $connection.OwningProcess `
-                -Force `
-                -ErrorAction SilentlyContinue
+              Stop-Process -Id $connection.OwningProcess -Force -ErrorAction SilentlyContinue
             }
           }
-
           Start-Sleep -Seconds 2
 
       # 10. Start backend
@@ -84,12 +72,8 @@ jobs:
         working-directory: ./BE-sistem-inventory
         shell: powershell
         run: |
-          $process = Start-Process `
-            -FilePath "cmd.exe" `
-            -ArgumentList '/c npm start > backend.log 2>&1' `
-            -WorkingDirectory "$PWD" `
-            -PassThru
-
+          $env:RUNNER_TRACKING_ID = ""
+          $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm start > backend.log 2>&1" -WorkingDirectory "$PWD" -PassThru
           Write-Host "Backend process ID: $($process.Id)"
 
       # 11. Start frontend
@@ -97,12 +81,8 @@ jobs:
         working-directory: ./FE-sistem-inventory
         shell: powershell
         run: |
-          $process = Start-Process `
-            -FilePath "cmd.exe" `
-            -ArgumentList '/c npm run preview -- --host 127.0.0.1 --port 5173 > frontend.log 2>&1' `
-            -WorkingDirectory "$PWD" `
-            -PassThru
-
+          $env:RUNNER_TRACKING_ID = ""
+          $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run preview -- --host 127.0.0.1 --port 5173 > frontend.log 2>&1" -WorkingDirectory "$PWD" -PassThru
           Write-Host "Frontend process ID: $($process.Id)"
 
       # 12. Tunggu aplikasi aktif
@@ -114,26 +94,17 @@ jobs:
       - name: Sanity Check Frontend
         shell: powershell
         run: |
-          $response = Invoke-WebRequest `
-            -Uri "http://localhost:5173" `
-            -UseBasicParsing `
-            -TimeoutSec 15
-
+          $response = Invoke-WebRequest -Uri "http://localhost:5173" -UseBasicParsing -TimeoutSec 15
           if ($response.StatusCode -ne 200) {
             throw "Frontend gagal diakses"
           }
-
           Write-Host "Frontend OK: Status 200"
 
       # 14. Sanity testing backend
       - name: Sanity Check Backend
         shell: powershell
         run: |
-          $response = Invoke-WebRequest `
-            -Uri "http://localhost:3000/api/health" `
-            -UseBasicParsing `
-            -TimeoutSec 15
-
+          $response = Invoke-WebRequest -Uri "http://localhost:3000/api/health" -UseBasicParsing -TimeoutSec 15
           Write-Host "Backend merespons: Status $($response.StatusCode)"
 
       # 15. Titik akhir pengukuran
@@ -145,4 +116,3 @@ jobs:
           Write-Host "DEPLOYMENT CI/CD BERHASIL"
           Write-Host "STOP: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff')"
           Write-Host "================================"
-```
