@@ -1,5 +1,5 @@
 ```yaml
-name: CI/CD - Sistem Inventory & Supplier
+name: "CI/CD - Sistem Inventory & Supplier"
 
 on:
   push:
