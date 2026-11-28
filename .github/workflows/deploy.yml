@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       # 4. Install backend dependencies
       - name: Install Backend Dependencies
@@ -67,23 +67,29 @@ jobs:
           }
           Start-Sleep -Seconds 2
 
-      # 10. Start backend
+            # 10. Start backend
       - name: Start Backend
         working-directory: ./BE-sistem-inventory
         shell: powershell
         run: |
-          $env:RUNNER_TRACKING_ID = ""
-          $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm start > backend.log 2>&1" -WorkingDirectory "$PWD" -PassThru
-          Write-Host "Backend process ID: $($process.Id)"
+          $cmd = "cmd.exe /c npm start > `"$PWD\backend.log`" 2>&1"
+          $result = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
+            CommandLine = $cmd
+            CurrentDirectory = "$PWD"
+          }
+          Write-Host "Backend started with PID: $($result.ProcessId)"
 
       # 11. Start frontend
       - name: Start Frontend
         working-directory: ./FE-sistem-inventory
         shell: powershell
         run: |
-          $env:RUNNER_TRACKING_ID = ""
-          $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run preview -- --host 127.0.0.1 --port 5173 > frontend.log 2>&1" -WorkingDirectory "$PWD" -PassThru
-          Write-Host "Frontend process ID: $($process.Id)"
+          $cmd = "cmd.exe /c npm run preview -- --host 0.0.0.0 --port 5173 > `"$PWD\frontend.log`" 2>&1"
+          $result = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
+            CommandLine = $cmd
+            CurrentDirectory = "$PWD"
+          }
+          Write-Host "Frontend started with PID: $($result.ProcessId)"
 
       # 12. Tunggu aplikasi aktif
       - name: Wait For Application
