@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from "react";
-import Sidebar from "../components/Sidebar.jsx";
+import Sidebar from "../components/Sidebar";
+import { useState, useMemo } from "react";
 import AddProductModal from "../components/AddProductModal.jsx";
 import EditProductModal from "../components/EditProductModal.jsx";
-import { Link } from "react-router-dom";
 import "../styles/product.css";
 import IconButton from "@mui/material/IconButton";
 import EditIcon from "@mui/icons-material/Edit";

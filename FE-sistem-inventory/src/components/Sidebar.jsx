@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "../styles/sidebar.css";
 import Instockflow from "../assets/Instockflow.jpg";
@@ -10,9 +10,12 @@ function Sidebar(props) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+
+  if (location.pathname !== prevPathname) {
+    setPrevPathname(location.pathname);
     setIsDropdownOpen(false);
-  }, [location.pathname]);
+  }
 
   useEffect(() => {
     function handleClickOutside(event) {

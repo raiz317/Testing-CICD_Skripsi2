@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import Sidebar from "../components/Sidebar.jsx";
+import { useState } from "react";
 import "../styles/profile.css";
 
 function Profile(props) {
@@ -15,7 +14,10 @@ function Profile(props) {
     confirmPassword: "",
   });
 
-  useEffect(() => {
+  const [prevUser, setPrevUser] = useState(user);
+
+  if (user !== prevUser) {
+    setPrevUser(user);
     if (user) {
       setFormValues((prev) => ({
         ...prev,
@@ -26,7 +28,7 @@ function Profile(props) {
         confirmPassword: "",
       }));
     }
-  }, [user]);
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;

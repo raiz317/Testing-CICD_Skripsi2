@@ -1,6 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
-import Sidebar from "../components/Sidebar.jsx";
+import Sidebar from "../components/Sidebar";
+import { useState, useMemo } from "react";
 import AddSupplierModal from "../components/AddSupplierModal.jsx";
 import EditSupplierModal from "../components/EditSupplierModal.jsx";
 import "../styles/supplier.css";

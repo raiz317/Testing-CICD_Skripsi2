@@ -1,4 +1,3 @@
-import React from 'react'
 import '../styles/product.css';
 
 function AddProductModal({ handleFormSubmit, newProduct, handleFormChange, setIsModalOpen, isModalOpen, suppliers }) {

@@ -1,4 +1,3 @@
-import React from "react";
 import '../styles/product.css';
 
 function EditProductModal({ isEditModalOpen, setIsEditModalOpen, handleEditFormSubmit, editingProduct, handleEditFormChange, suppliers }) {

@@ -1,5 +1,4 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import '../App.css';
 import inves from '../assets/inves.png';
 import live from '../assets/live.png';

@@ -1,6 +1,4 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import Sidebar from "../components/Sidebar.jsx";
+import Sidebar from "../components/Sidebar";
 import "../styles/dashboard.css";
 import CategoryIcon from "@mui/icons-material/Category";
 import GroupIcon from "@mui/icons-material/Group";

@@ -1,4 +1,3 @@
-import React from 'react';
 import '../styles/supplier.css';
 
 function AddSupplierModal({ isModalOpen, setIsModalOpen, addSupplierForm, handleFormSupplier, handleFormSubmit }) {

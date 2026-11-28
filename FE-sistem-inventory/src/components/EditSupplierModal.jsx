@@ -1,4 +1,3 @@
-import React from "react";
 import '../styles/supplier.css';
 
 function EditSupplierModal({ isEditModalOpen, setIsEditModalOpen, editingSupplier, handleEditFormChange, handleFormEditSubmit }) {
